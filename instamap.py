@@ -3,6 +3,7 @@ import json
 import logging
 import getopt
 import sys
+import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,21 +41,24 @@ def main():
     else:
         sys.exit(2)
 
-    shortcodes = fetch_shortcodes(posts)
-    for item in fetch_locations(shortcodes):
+    for item in fetch_locations(posts):
         print(item)
 
 
 def fetch_user_posts(user):
+    result = []
     end_cursor = ''
     for i in range(0, page_count):
         url = 'https://www.instagram.com/{0}/?__a=1&max_id={1}'.format(user, end_cursor)
+        print(url)
         r = requests.get(url)
         data = json.loads(r.text)
-        end_cursor = data['graphql']["user"]['edge_owner_to_timeline_media']['page_info'][
-            'end_cursor']  # value for the next page
+        for item in (data['graphql']['user']['edge_owner_to_timeline_media']['edges']):
+            result.append(item['node']['shortcode'])
+        end_cursor = data['graphql']["user"]['edge_owner_to_timeline_media']['page_info']['end_cursor']  # value for the next page
+        time.sleep(2)
 
-        return data['graphql']['user']['edge_owner_to_timeline_media']['edges']  # list with posts
+    return result
 
 
 def fetch_tag_posts(tag):
@@ -66,7 +70,7 @@ def fetch_tag_posts(tag):
         end_cursor = data['graphql']['hashtag']['edge_hashtag_to_media']['page_info'][
             'end_cursor']  # value for the next page
 
-        return data['graphql']['hashtag']['edge_hashtag_to_media']['edges']  # list with posts
+    return data['graphql']['hashtag']['edge_hashtag_to_media']['edges']  # list with posts
 
 
 def fetch_shortcodes(posts):
